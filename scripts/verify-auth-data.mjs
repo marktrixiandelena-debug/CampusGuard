@@ -1,0 +1,58 @@
+import assert from 'node:assert/strict'
+import { people,visits } from '../src/data/data.ts'
+import { authReducer,mockAccounts,resolveSession,canAccessPath,canUseGate,mayViewVisit,securityGates } from '../src/features/auth/auth-data.ts'
+
+const initial={accounts:mockAccounts,sessionId:null,result:null}
+const login=(state,username,password='CampusHead123!')=>authReducer(state,{type:'login',requestId:'login',username,password,people})
+const headState=login(initial,' HEAD '),head=resolveSession(headState.accounts,headState.sessionId,people)
+assert.equal(head.role,'Security Head')
+assert.equal(head.name,'Rosario Bautista')
+assert.ok(!('password' in head))
+assert.equal(login(initial,'head','wrong').result.ok,false)
+assert.equal(login(initial,'head','campushead123!').result.ok,false)
+assert.ok(login(initial,'','').result.errors.username)
+const guardState=login(initial,'guard.main','CampusGuard123!'),guard=resolveSession(guardState.accounts,guardState.sessionId,people)
+assert.equal(guard.personId,'SEC-001')
+assert.equal(guard.name,people[0].name)
+for(const route of ['/dashboard','/visitors','/help'])assert.ok(canAccessPath(guard,route))
+for(const route of ['/accounts','/analytics','/reports','/incidents','/lost-found','/personnel','/personnel/duty-schedule','/personnel/activity-history']){
+  assert.ok(!canAccessPath(guard,route),route)
+  assert.ok(canAccessPath(head,route),route)
+  assert.ok(!canAccessPath(null,route))
+}
+assert.ok(!canAccessPath(head,'/register'))
+assert.ok(canUseGate(guard,securityGates[0]))
+assert.ok(!canUseGate(guard,securityGates[1]))
+assert.ok(!mayViewVisit(guard,visits[0]))
+assert.ok(mayViewVisit(guard,visits[1]))
+assert.equal(resolveSession(guardState.accounts,guardState.sessionId,people.map(p=>({...p,status:'Inactive'}))),null)
+assert.equal(authReducer(guardState,{type:'logout'}).sessionId,null)
+let sequence=0
+const change=(state,input)=>authReducer(state,{type:'manage',requestId:'manage-'+sequence,newAccountId:'NEW-'+sequence++,change:input,people})
+const create={kind:'create',username:'new.guard',password:'Temporary123!',personId:'SEC-002',gates:[securityGates[0]]}
+assert.equal(change(guardState,create).result.ok,false)
+assert.equal(change(initial,create).result.ok,false)
+let state=change(headState,create)
+assert.ok(state.result.ok)
+const created=state.accounts.at(-1)
+assert.equal(created.role,'Security Guard')
+assert.equal(state.accounts.length,mockAccounts.length+1)
+assert.ok(login(state,'new.guard','Temporary123!').result.ok)
+for(const patch of [{username:'HEAD'},{username:'x'},{personId:'SEC-001'},{personId:'SEC-007'},{gates:[]},{gates:['Invented']},{password:'short'}])assert.ok(!change(headState,{...create,...patch}).result.ok,JSON.stringify(patch))
+assert.ok(!change(state,{...create,username:'other.guard'}).result.ok,'One account per personnel profile')
+state=change(state,{kind:'access',accountId:created.id,gates:[securityGates[1]]})
+assert.deepEqual(state.accounts.at(-1).gates,[securityGates[1]])
+state=change(state,{kind:'password',accountId:created.id,password:'Replacement123!'})
+assert.equal(login(state,'new.guard','Temporary123!').result.ok,false)
+assert.ok(login(state,'new.guard','Replacement123!').result.ok)
+state=change(state,{kind:'enabled',accountId:created.id,enabled:false})
+assert.equal(login(state,'new.guard','Replacement123!').result.ok,false)
+assert.equal(resolveSession(state.accounts,created.id,people),null)
+state=change(state,{kind:'enabled',accountId:created.id,enabled:true})
+assert.ok(login(state,'new.guard','Replacement123!').result.ok)
+for(const input of [{kind:'enabled',accountId:'ACCOUNT-HEAD',enabled:false},{kind:'password',accountId:'ACCOUNT-HEAD',password:'Replacement123!'},{kind:'access',accountId:'ACCOUNT-HEAD',gates:[]}])assert.ok(!change(state,input).result.ok,'Guard management cannot modify the Head account')
+assert.equal(mockAccounts.length,3)
+console.log('PASS: mock login, roles, account eligibility, gate and route scope, Head-only account changes, protected Head account, account uniqueness, password reset, and enable/disable.')
+
+assert.ok(canAccessPath(guard,'/visitors/'))
+assert.ok(!canAccessPath(guard,'/accounts/'))

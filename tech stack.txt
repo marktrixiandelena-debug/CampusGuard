@@ -1,0 +1,34 @@
+CampusGuard
+2. Technical Stack & Requirements
+
+Layer                         Currently used                          Recommended for the full project
+----------------------------  --------------------------------------  ----------------------------------------------
+Frontend Framework            React with TypeScript                   Keep React and TypeScript for the web interface.
+Markup & Styling              HTML5, CSS, and Tailwind CSS 4          Keep HTML5 and CSS (including CSS3 features),
+                                                                      with Tailwind CSS for consistent styling.
+Frontend Build & Libraries    Vite, npm, React Router, Lucide React,  Keep the existing build tools, navigation,
+                              and Recharts                            icons, and charts.
+Backend Technology            Browser-only demo logic and mock login  PHP with Laravel for the API, business rules,
+                                                                      authentication, and role permissions.
+Database Management System    In-memory sample records               MySQL managed through Laravel's Eloquent ORM and
+                                                                      schema migrations. Persist operational records there.
+Containerization / Hosting    Vite for local development and preview  Docker and Docker Compose for a repeatable
+                                                                      setup. Deploy on a university-approved server
+                                                                      or cloud host with HTTPS.
+Version Control & Repository  .gitignore is present. A GitHub remote  Git for version control and a private GitHub
+                              could not be confirmed in this copy.    repository for collaboration and code review.
+Design & Prototyping          Figma design referenced in project docs  Continue using Figma for prototypes and UI review.
+Quality Checks                TypeScript build, Oxlint, and Node.js   Keep the existing checks and add backend tests
+                              data and browser verification scripts  for permissions and operational workflows.
+
+Requirements for an operational deployment
+
+1. Replace mock login with Laravel authentication and enforce Security Head,
+   Security Guard, and gate permissions on the server.
+2. Save visitor transactions, ID custody, incidents, lost and found records,
+   personnel, duty assignments, and activity history in MySQL. Generate
+   dashboard totals and security reports from those records.
+3. Store uploaded photos in private file storage with authorized access.
+   Keep the file references and access metadata in MySQL.
+4. Configure HTTPS, environment-based secrets, and regular backups with a
+   tested restore process. Use Asia/Manila for campus reporting dates.

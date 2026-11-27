@@ -1,0 +1,37 @@
+/* Typography roles stay inside dialogs; page typography is independent. */
+dialog{
+  --popup-title-size:22px;
+  --popup-section-size:15px;
+  --popup-name-size:15px;
+  --popup-card-title-size:14px;
+  --popup-value-size:14px;
+  --popup-body-size:14px;
+  --popup-meta-size:12px;
+  --popup-title-color:var(--navy);
+  --popup-text-color:var(--text);
+  --popup-muted-color:var(--text-muted);
+  font-size:var(--popup-body-size);
+  line-height:20px;
+  color:var(--popup-text-color);
+}
+dialog .dialog-heading h2{font-size:var(--popup-title-size);font-weight:600;line-height:1.35;color:var(--popup-title-color)}
+dialog :is(.dialog-heading,.detail-heading)>div{min-width:0}
+dialog .dialog-heading>button{flex-shrink:0}
+dialog h3{font-size:var(--popup-section-size);font-weight:600;line-height:1.4;color:var(--popup-title-color);overflow-wrap:anywhere}
+dialog .detail-heading h3{font-size:var(--popup-name-size);line-height:1.4}
+dialog .detail-heading>strong{font-size:var(--popup-name-size);font-weight:600;color:var(--popup-title-color)}
+dialog p{font-size:var(--popup-body-size);line-height:20px;overflow-wrap:anywhere}
+dialog :is(small,.muted){font-size:var(--popup-meta-size);line-height:18px;color:var(--popup-muted-color)}
+dialog .dialog-heading p{font-size:var(--popup-body-size);line-height:19px;color:var(--popup-muted-color)}
+dialog .details-grid dt{font-size:var(--popup-meta-size);line-height:18px;color:var(--popup-muted-color)}
+dialog .details-grid dd{font-size:var(--popup-value-size);font-weight:500;line-height:20px;color:var(--popup-text-color)}
+dialog .field{font-size:var(--popup-body-size)}
+dialog .field>span{font-size:var(--popup-body-size);font-weight:500;line-height:18px;overflow-wrap:anywhere}
+dialog .field :is(input,select,textarea){font-size:var(--popup-value-size)}
+dialog :is(.callout,.report-preview-section,.checks){font-size:var(--popup-body-size);line-height:20px}
+dialog :is(.callout,.report-preview-section)>strong{font-size:var(--popup-value-size);font-weight:600}
+dialog .group-row h3{font-size:var(--popup-card-title-size)}
+dialog :is(.group-row,.report-preview-section,.callout) p{font-size:var(--popup-body-size);line-height:20px}
+dialog th{font-size:var(--popup-meta-size)}
+
+@media(max-width:639px){dialog .field :is(input,select,textarea){font-size:16px}}

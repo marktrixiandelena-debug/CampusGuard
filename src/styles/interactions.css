@@ -1,0 +1,75 @@
+/* Shared feedback uses color and shadow, so controls keep their position. */
+:is(button,a[href],select,input,textarea,.search-box,.item-card,.module[role=link],tbody tr){transition:background-color var(--motion-feedback) ease,color var(--motion-feedback) ease,border-color var(--motion-feedback) ease,box-shadow var(--motion-feedback) ease}
+:is(button,a[href],select,input,textarea,[tabindex="0"]):focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.search-box:focus-within{outline:3px solid var(--focus);outline-offset:2px}
+.search-box input:focus-visible{outline:none}
+.sidebar button:focus-visible{outline-color:#93c5fd;outline-offset:-2px}
+.record-quick-filters button:focus-visible{outline-offset:-3px}
+.table-scroll:focus-visible{outline-offset:-3px}
+tbody tr:has(:focus-visible){background:var(--hover-bg)}
+.item-card:has(:focus-visible),.module[role=link]:focus-visible{border-color:#a5b8d0;box-shadow:0 3px 10px #142d4e12}
+
+@media(hover:hover) and (pointer:fine){
+  button.primary:not(:disabled):hover{background:var(--navy)}
+  button.danger:not(:disabled):hover{background:#941426}
+  :is(button.outline,.map-upload):not(:disabled):hover{background:var(--hover-bg);border-color:var(--selection-border)}
+  .segments button:not(.primary):not(:disabled):hover,.tabs>a:not(.primary):hover{background:var(--hover-bg);color:var(--navy)}
+  .tabs>a.primary:hover,.segments button.primary:not(:disabled):hover{background:var(--selection-hover);color:var(--selection-text)}
+  :is(.text-button,.record-filter-clear):not(:disabled):hover{color:var(--navy-soft);text-decoration:underline;text-underline-offset:3px}
+  :is(.notification,.menu-button,.sidebar-toggle,.dialog-heading>button):not(:disabled):hover{background:var(--hover-bg)}
+  .map-legend button:not(.active):not(:disabled):hover{background:var(--hover-bg);border-color:var(--selection-border)}
+  .item-card:has(button:not(:disabled)):hover{border-color:#a5b8d0;box-shadow:0 3px 10px #142d4e12}
+  tbody tr:hover{background:var(--hover-bg)}
+}
+
+button.primary:not(:disabled):active{background:#102641}
+.segments button.primary:not(:disabled):active,.tabs>a.primary:active,.record-quick-filters button[aria-pressed=true]:active{background:var(--selection-hover);color:var(--selection-text)}
+button.danger:not(:disabled):active{background:#7f1322}
+:is(button.outline,.record-more-filters,.record-filter-chip,.notification,.menu-button,.dialog-heading>button):not(:disabled):active{background:var(--selection-hover)}
+.segments button:not(.primary):not(:disabled):active,.tabs>a:not(.primary):active{background:var(--selection-hover)}
+.record-quick-filters button:active{background:var(--hover-bg)}
+
+.workspace,main,.content-panel,.form-grid>*,.page-heading>*{min-width:0}
+.table-scroll{max-width:100%}
+.panel-title{flex-wrap:wrap}
+.tabs{max-width:100%;overflow-x:auto}
+.field :is(input,select,textarea){max-width:100%}
+
+@media(max-width:1279px){.two-column.map-primary{grid-template-columns:1fr}}
+@media(max-width:639px){
+  .tabs>a{flex:0 0 auto;min-width:max-content;padding-inline:12px}
+  .snapshot,.map-photo-actions,.map-selected-post{flex-wrap:wrap}
+  .assignment-controls>span{min-width:0;overflow-wrap:anywhere}
+  dialog{padding:18px;max-width:calc(100% - 24px)}
+  dialog footer{flex-wrap:wrap;gap:10px}
+  .dialog-heading h2{overflow-wrap:anywhere}
+}
+
+@media(pointer:coarse),(max-width:639px){
+  .application :is(button,.tabs>a,select,.search-box){min-height:44px}
+  .menu-button,.notification,.dialog-heading>button,.map-view-toggle,.record-quick-filters button{min-width:44px}
+  input:not([type=checkbox]):not([type=radio]):not([type=file]),textarea{min-height:44px}
+  .record-toolbar .segments,.personnel-directory .segments{height:auto;min-height:50px}
+  .record-toolbar select,.record-toolbar-search .search-box{height:44px}
+  .checks label{min-height:44px}
+  .map-upload{min-height:44px}
+  .application :is(.map-slot,.map-slot-expanded) button.post-marker{min-width:44px;min-height:44px}
+}
+
+@keyframes dialog-enter{from{opacity:0;transform:scale(.98)}to{opacity:1;transform:scale(1)}}
+@keyframes surface-enter{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes chart-reveal{from{opacity:0}to{opacity:1}}
+.visitor-success,.dashboard-missing-record{animation:surface-enter var(--motion-enter) ease-out}
+.status-badge{transition:background-color var(--motion-feedback),color var(--motion-feedback),border-color var(--motion-feedback)}
+@media(hover:hover) and (pointer:fine){
+  button:is(.primary,.outline):not(:disabled):not(.segments button):hover,a.primary:not(.tabs>a):hover{box-shadow:0 2px 5px #142d4e18}
+  button:is(.primary,.outline):not(:disabled):not(.segments button):active,a.primary:not(.tabs>a):active{box-shadow:none}
+}
+@keyframes backdrop-enter{from{opacity:0}to{opacity:1}}
+@keyframes backdrop-exit{to{opacity:0}}
+dialog[open]{animation:dialog-enter var(--motion-enter) ease-out}
+dialog[open]::backdrop{animation:backdrop-enter var(--motion-enter) ease-out}
+dialog[data-closing]::backdrop{animation:backdrop-exit var(--motion-exit) ease-in forwards}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition-duration:0s!important;animation-duration:0s!important;scroll-behavior:auto!important}
+}

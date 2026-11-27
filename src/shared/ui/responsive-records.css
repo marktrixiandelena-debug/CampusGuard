@@ -1,0 +1,20 @@
+.mobile-records,.mobile-table-label{display:none}
+@media(max-width:639px){
+  .desktop-records,.desktop-table-label{display:none}
+  .mobile-records{display:block;min-width:0}
+  .mobile-table-label{display:inline}
+  .mobile-record-list{list-style:none;margin:0;padding:0;border-top:1px solid var(--border)}
+  .mobile-record-list>li+li{border-top:1px solid var(--border)}
+  .mobile-record{padding:16px 14px;min-width:0;color:var(--navy);background:var(--surface)}
+  .mobile-record h3{font-size:15px;line-height:1.5;font-weight:600;margin:0 0 9px;overflow-wrap:anywhere}
+  .mobile-record-badges{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+  .mobile-record-badges .status-badge{font-size:11px;white-space:normal;overflow-wrap:anywhere}
+  .mobile-record-badges>span:not(.status-badge){font-size:12px;line-height:1.5;color:var(--text-secondary)}
+  .mobile-record dl{margin:12px 0;display:grid;gap:7px}
+  .mobile-record dl>div{display:grid;grid-template-columns:74px minmax(0,1fr);gap:10px;align-items:baseline}
+  .mobile-record dt{font-size:12px;line-height:1.5;color:var(--text-muted)}
+  .mobile-record dd{font-size:13px;line-height:1.5;color:var(--text);margin:0;overflow-wrap:anywhere;min-width:0}
+  .mobile-record-actions{display:flex;flex-wrap:wrap;gap:8px}
+  .mobile-record-actions button{flex:1 1 120px;min-height:44px;white-space:normal;font-size:13px;padding:10px 12px}
+  .mobile-record-actions button:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+}

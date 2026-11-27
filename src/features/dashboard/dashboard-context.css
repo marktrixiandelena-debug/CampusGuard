@@ -1,0 +1,6 @@
+.dashboard-back-link{display:inline-flex;align-items:center;gap:8px;min-height:44px;margin-bottom:12px;color:var(--navy-soft);text-decoration:none;font-size:14px;font-weight:600;border-radius:6px}
+.dashboard-back-link:hover{text-decoration:underline}
+.dashboard-back-link:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.dashboard-missing-record{display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--warning-bg);border:1px solid #fcd34d;border-radius:8px;padding:16px;margin-bottom:18px;color:#78350f;font-size:14px;line-height:1.6}
+.dashboard-missing-record button{min-height:44px;flex-shrink:0}
+@media(max-width:639px){.dashboard-missing-record{align-items:flex-start;flex-direction:column}}

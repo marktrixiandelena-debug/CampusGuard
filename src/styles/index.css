@@ -1,0 +1,30 @@
+@import "tailwindcss";
+@theme { --color-campus-navy: #142d4e; --font-sans: 'Inter', 'Segoe UI', system-ui, sans-serif; }
+:root{
+  --navy:#142d4e;--navy-soft:#243f61;--text:#334155;--text-secondary:#475569;--text-muted:#526174;
+  --surface:#fff;--surface-subtle:#f8fafc;--surface-muted:#f1f5f9;
+  --page-bg:#f3f6fa;--selection-bg:#eaf2fb;--selection-text:#142d4e;--selection-border:#37648c;--selection-hover:#dce9f7;--hover-bg:#f0f5fb;
+  --control-border:#7c8da2;--sidebar-active:#2b496d;
+  --info:#245582;--info-bg:#edf4fb;--info-border:#b5cce1;
+  --border:#dce3ec;--border-strong:#b8c6d6;--focus:#37648c;
+  --success:#166534;--success-bg:#f0f7f2;--success-border:#cfe3d5;
+  --danger:#a42636;--danger-bg:#fcf1f2;--danger-border:#ebcbd0;
+  --warning:#854d0e;--warning-bg:#faf6ed;--warning-border:#e9ddc1;
+  --space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-6:24px;--space-8:32px;
+  --radius-control:6px;--radius-panel:8px;--shadow-panel:0 1px 2px #142d4e05;--shadow-dialog:0 24px 64px #0f172a33;
+  --motion-feedback:150ms;--motion-enter:200ms;--motion-exit:150ms;--motion-reveal:250ms;
+  font-family:var(--font-sans);font-size:14px;line-height:1.5;color:var(--text);background:var(--page-bg);
+  font-synthesis:none;-webkit-font-smoothing:antialiased;
+}
+*{box-sizing:border-box}
+body{margin:0}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+button:disabled{cursor:default}
+button:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+h1,h2,p{margin:0}
+
+::selection{background:var(--selection-bg);color:var(--selection-text)}
+input,textarea{caret-color:var(--selection-border)}
+input:is([type=checkbox],[type=radio]){accent-color:var(--selection-border)}
+::placeholder{color:var(--text-muted);opacity:1}

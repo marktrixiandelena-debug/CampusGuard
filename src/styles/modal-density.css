@@ -1,0 +1,20 @@
+/* Comfortable spacing shared by detail, form, preview, and notice dialogs. */
+dialog{padding:24px}
+dialog .dialog-heading{gap:var(--space-4);margin-bottom:16px}
+dialog .dialog-heading p{line-height:18px}
+dialog p{line-height:22px}
+dialog h3{margin-block:12px}
+dialog .detail-heading{padding-block:12px;margin-bottom:12px}
+dialog .detail-heading h3{margin:0 0 6px}
+dialog .details-grid{gap:var(--space-4);margin-block:16px}
+dialog .details-grid dt{margin-bottom:4px}
+dialog .field{gap:6px;margin-bottom:12px}
+dialog .form-grid{gap:var(--space-4);margin-bottom:16px}
+dialog .form-grid .field{margin-bottom:0}
+dialog .callout{padding:var(--space-3);margin-top:12px}
+dialog .callout p{margin-top:6px;line-height:20px}
+dialog .report-preview-section{padding:var(--space-3);margin-top:12px}
+dialog .report-preview-section p{margin-top:6px;line-height:20px}
+dialog .checks{gap:var(--space-3);margin-block:14px}
+dialog footer{margin-top:16px;padding-top:12px;gap:10px}
+@media(max-width:639px){dialog{padding:16px}}
