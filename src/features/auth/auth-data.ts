@@ -4,11 +4,14 @@ export type UserRole='Security Head'|'Security Guard'
 export type MockAccount={id:string;username:string;password:string;role:UserRole;name?:string;personId?:string;enabled:boolean;gates:string[]}
 export type SessionUser={accountId:string;username:string;name:string;role:UserRole;personId?:string;gates:string[]}
 export const securityGates=['Gate 1 (Main)','Gate 2 (Side)']
+const demoAccounts:Readonly<Record<UserRole,string>>={
+  'Security Head':'ACCOUNT-HEAD',
+  'Security Guard':'ACCOUNT-MAIN',
+}
 // shortcut: these credentials are public demo fixtures; replace with server authentication before real use.
 export const mockAccounts:MockAccount[]=[
   {id:'ACCOUNT-HEAD',username:'head',password:'CampusHead123!',role:'Security Head',name:'Rosario Bautista',enabled:true,gates:[...securityGates]},
   {id:'ACCOUNT-MAIN',username:'guard.main',password:'CampusGuard123!',role:'Security Guard',personId:'SEC-001',enabled:true,gates:[securityGates[0]]},
-  {id:'ACCOUNT-SIDE',username:'guard.side',password:'CampusGuard123!',role:'Security Guard',personId:'SEC-003',enabled:true,gates:[securityGates[1]]},
 ]
 export function accountName(account:MockAccount|undefined,people:Person[]){
   return account?.role==='Security Head'?account.name||'Security Head':people.find(p=>p.id===account?.personId)?.name||'Not Recorded'
@@ -37,12 +40,21 @@ export type AuthResult={requestId:string;ok:boolean;message?:string;errors:Recor
 export type AuthState={accounts:MockAccount[];sessionId:string|null;result:AuthResult|null}
 export type AuthAction=
   |{type:'login';requestId:string;username:string;password:string;people:Person[]}
+  |{type:'enter-demo';requestId:string;role:UserRole;people:Person[]}
   |{type:'logout'}
   |{type:'manage';requestId:string;newAccountId:string;change:GuardAccountChange;people:Person[]}
 export function authReducer(state:AuthState,action:AuthAction):AuthState{
   if(action.type==='logout')return {...state,sessionId:null,result:null}
   const errors:Record<string,string>={}
   const fail=()=>({...state,result:{requestId:action.requestId,ok:false,errors}})
+  if(action.type==='enter-demo'){
+    const accountId=demoAccounts[action.role]
+    if(!accountId||resolveSession(state.accounts,accountId,action.people)?.role!==action.role){
+      errors.form=`${action.role} demo access is unavailable. Choose Security Head to check the guard profile and access settings.`
+      return fail()
+    }
+    return {...state,sessionId:accountId,result:{requestId:action.requestId,ok:true,errors:{}}}
+  }
   if(action.type==='login'){
     if(!action.username.trim())errors.username='Enter your username.'
     if(!action.password)errors.password='Enter your password.'

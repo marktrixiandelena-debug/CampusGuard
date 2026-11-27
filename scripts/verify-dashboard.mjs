@@ -65,9 +65,7 @@ try {
   const ensureHead=async target=>{
     for(let i=0;i<60;i++){if(await evaluate('!!document.querySelector(".login-panel")'))break;await pause(100)}
     assert.ok(await evaluate('!!document.querySelector(".login-panel")'),'A full reload requires sign-in')
-    await setControl('.login-panel input[name=username]','head')
-    await setControl('.login-panel input[name=password]','CampusHead123!')
-    await evaluate('document.querySelector(".login-panel form").requestSubmit()')
+    await evaluate(`document.querySelector('[data-demo-role="Security Head"]').click()`)
     for(let i=0;i<60;i++){if(await evaluate('!!document.querySelector(".application")'))break;await pause(100)}
     assert.equal(await evaluate('document.querySelector(".identity small").textContent'),'Security Head')
     const path=new URL(target,baseUrl)

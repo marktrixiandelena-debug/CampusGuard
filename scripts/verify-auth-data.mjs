@@ -3,6 +3,12 @@ import { people,visits } from '../src/data/data.ts'
 import { authReducer,mockAccounts,resolveSession,canAccessPath,canUseGate,mayViewVisit,securityGates } from '../src/features/auth/auth-data.ts'
 
 const initial={accounts:mockAccounts,sessionId:null,result:null}
+const enterDemo=(state,role,profiles=people)=>authReducer(state,{type:'enter-demo',requestId:'demo',role,people:profiles})
+assert.equal(enterDemo(initial,'Security Head').sessionId,'ACCOUNT-HEAD')
+assert.equal(enterDemo(initial,'Security Guard').sessionId,'ACCOUNT-MAIN')
+assert.equal(enterDemo(initial,'Security Guard',people.map(p=>({...p,status:'Inactive'}))).sessionId,null)
+const disabled={...initial,accounts:mockAccounts.map(a=>a.role==='Security Guard'?{...a,enabled:false}:a)}
+assert.equal(enterDemo(disabled,'Security Guard').result.ok,false)
 const login=(state,username,password='CampusHead123!')=>authReducer(state,{type:'login',requestId:'login',username,password,people})
 const headState=login(initial,' HEAD '),head=resolveSession(headState.accounts,headState.sessionId,people)
 assert.equal(head.role,'Security Head')
@@ -51,7 +57,7 @@ assert.equal(resolveSession(state.accounts,created.id,people),null)
 state=change(state,{kind:'enabled',accountId:created.id,enabled:true})
 assert.ok(login(state,'new.guard','Replacement123!').result.ok)
 for(const input of [{kind:'enabled',accountId:'ACCOUNT-HEAD',enabled:false},{kind:'password',accountId:'ACCOUNT-HEAD',password:'Replacement123!'},{kind:'access',accountId:'ACCOUNT-HEAD',gates:[]}])assert.ok(!change(state,input).result.ok,'Guard management cannot modify the Head account')
-assert.equal(mockAccounts.length,3)
+assert.equal(mockAccounts.length,2)
 console.log('PASS: mock login, roles, account eligibility, gate and route scope, Head-only account changes, protected Head account, account uniqueness, password reset, and enable/disable.')
 
 assert.ok(canAccessPath(guard,'/visitors/'))

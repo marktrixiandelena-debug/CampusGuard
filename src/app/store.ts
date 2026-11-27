@@ -2,7 +2,7 @@ import { createContext, useContext, useReducer, useState } from 'react'
 import { campusDateTime, visitorProfiles, visitorReducer } from '../features/visitors/visitor-data'
 import type { CheckInInput, CheckOutInput } from '../features/visitors/visitor-data'
 import { authReducer, mockAccounts, resolveSession } from '../features/auth/auth-data'
-import type { GuardAccountChange } from '../features/auth/auth-data'
+import type { GuardAccountChange, UserRole } from '../features/auth/auth-data'
 import { overlappingDrafts, validWeeklyPeriod } from '../features/personnel/weekly-draft'
 import type { WeeklyDraft } from '../features/personnel/weekly-draft'
 
@@ -21,9 +21,9 @@ export function useStoreValue(){
   const [authState,dispatchAuth]=useReducer(authReducer,{accounts:mockAccounts,sessionId:null,result:null})
   const currentUser=resolveSession(authState.accounts,authState.sessionId,people)
   if(authState.sessionId&&!currentUser)dispatchAuth({type:'logout'})
-  function login(username:string,password:string){
+  function enterDemo(role:UserRole){
     const requestId=crypto.randomUUID()
-    dispatchAuth({type:'login',requestId,username,password,people})
+    dispatchAuth({type:'enter-demo',requestId,role,people})
     return requestId
   }
   function logout(){dispatchAuth({type:'logout'})}
@@ -59,7 +59,7 @@ export function useStoreValue(){
     if(!affectedRosters)setRosterStates({})
     else if(affectedRosters.length)setRosterStates(old=>Object.fromEntries(Object.entries(old).filter(([key])=>!affectedRosters.includes(key))))
   }
-  return {currentUser,accounts:authState.accounts,authResult:authState.result,login,logout,manageGuardAccount,visits,visitorProfiles:visitorState.profiles,visitorResult:visitorState.result,checkInVisitor,checkOutVisitor,incidents,setIncidents,items,setItems,people,setPeople,assignments,setAssignments,weeklyDrafts,saveWeeklyDraft,posts,setPosts,mapPhoto,setMapPhoto,rosterStates,setRosterStatus,activities,activity}
+  return {currentUser,accounts:authState.accounts,authResult:authState.result,enterDemo,logout,manageGuardAccount,visits,visitorProfiles:visitorState.profiles,visitorResult:visitorState.result,checkInVisitor,checkOutVisitor,incidents,setIncidents,items,setItems,people,setPeople,assignments,setAssignments,weeklyDrafts,saveWeeklyDraft,posts,setPosts,mapPhoto,setMapPhoto,rosterStates,setRosterStatus,activities,activity}
 }
 export const DemoContext=createContext<ReturnType<typeof useStoreValue>|null>(null)
 
