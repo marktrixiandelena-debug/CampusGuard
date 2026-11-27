@@ -1,4 +1,4 @@
-import { dailyAssignmentsPath } from '../../app/navigation'
+import { personnelAssignmentsPath } from '../../app/navigation'
 import { useCampusDate } from '../../shared/hooks/useCampusDate'
 import { useState } from 'react'
 import { Link } from 'react-router'
@@ -23,7 +23,7 @@ export default function Dashboard(){
     {key:'visitors',label:'Visitor entries today',value:counts.visitors,note:`Admitted visits - ${formatReportDate(campusToday)} (Manila)`,action:'View visitor logbook',icon:DoorOpen,color:'blue',href:dashboardHref('/visitors',{view:'today-entries'})},
     {key:'incidents',label:'Incidents to follow up',value:counts.unresolved,note:'Open or monitored · all dates',action:'Review incidents',icon:ShieldAlert,color:'red',href:dashboardHref('/incidents',{view:'unresolved'})},
     {key:'items',label:'Found items to return',value:counts.awaitingReturn,note:'Awaiting return · all dates',action:'View found items',icon:PackageSearch,color:'amber',href:dashboardHref('/lost-found',{view:'awaiting-return'})},
-    {key:'guards',label:'Guards scheduled',value:counts.scheduled,note:'6am–2pm · planned duty',action:'View duty schedule',icon:UsersRound,color:'teal',href:dashboardHref(dailyAssignmentsPath,{date:TODAY,...dashboardShift})},
+    {key:'guards',label:'Guards scheduled',value:counts.scheduled,note:'6am–2pm · legacy planned duty',action:'View personnel assignments',icon:UsersRound,color:'teal',href:dashboardHref(personnelAssignmentsPath,{source:'legacy',date:TODAY,...dashboardShift})},
   ]
   const attention=[
     {key:'open',label:'Open incidents',value:counts.open,description:'Review cases that still need a response.',tone:'red',href:dashboardHref('/incidents',{view:'open'})},
@@ -34,7 +34,7 @@ export default function Dashboard(){
   const actions=[
     {label:'Record an incident',note:'Open a new incident report',icon:ShieldAlert,href:dashboardHref('/incidents',{action:'new'})},
     {label:'Record a lost or found item',note:'Add an item to the logbook',icon:PackagePlus,href:dashboardHref('/lost-found',{action:'new'})},
-    {label:'View duty schedule',note:'See planned guard assignments',icon:CalendarDays,href:dashboardHref(dailyAssignmentsPath,{date:TODAY,...dashboardShift})},
+    {label:'View personnel assignments',note:'See the recorded sample shift',icon:CalendarDays,href:dashboardHref(personnelAssignmentsPath,{source:'legacy',date:TODAY,...dashboardShift})},
     {label:'Prepare daily report',note:'Open the report setup for the sample date',icon:FileText,href:dashboardHref('/reports')},
   ]
 

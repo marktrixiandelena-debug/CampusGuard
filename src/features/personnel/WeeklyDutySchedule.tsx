@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, ChevronDown, FileText, ListFilter, Moon, PanelRight, Plus, Search, Sun, Undo2, X } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router'
-import { dailyAssignmentsPath } from '../../app/navigation'
 import { useDemo } from '../../app/store'
 import type { Person } from '../../data/data'
 import { Badge, Field, Footer, Heading, Modal, Panel, Segments, Select } from '../../shared/ui/ui'
 import { campusDateTime } from '../visitors/visitor-data'
 import { formatReportDate } from '../reporting/reporting'
-import { upcomingDutyPeriod, weeklyDuties } from './weekly-duty-template'
+import { formatDutyTour, upcomingDutyPeriod, weeklyDuties } from './weekly-duty-template'
 import { overlappingDrafts, validWeeklyPeriod } from './weekly-draft'
 import type { DutySelection, WeeklyDraft, WeeklyDraftDuty, WeeklyPeriod } from './weekly-draft'
 import { dutyResponsibility, weeklyDutyGroups } from './weekly-duty-groups'
@@ -24,7 +23,6 @@ export function WeeklyDutyRecords(){
   return <section className="weekly-duty">
     <Heading title="Duty Schedule" subtitle="Prepare weekly duty assignments." action={
       <div className="weekly-page-actions">
-        <Link className="outline" to={dailyAssignmentsPath}>Daily Assignments</Link>
         <Link className="primary" to={newWeeklySchedulePath}><Plus size={16} aria-hidden="true"/>Create Schedule</Link>
       </div>
     }/>
@@ -51,14 +49,6 @@ export function WeeklyDutyRecords(){
   </section>
 }
 
-
-function formatDutyTime(time:string){
-  const [hour,minute]=time.split(':').map(Number)
-  return `${hour%12||12}${minute?`:${String(minute).padStart(2,'0')}`:''} ${hour<12?'AM':'PM'}`
-}
-function formatDutyTour(duty:Pick<WeeklyDraftDuty,'start'|'end'>){
-  return `${formatDutyTime(duty.start)}–${formatDutyTime(duty.end)}`
-}
 
 function WeeklySchedulePreview({period,duties,selections,close}:{period:WeeklyPeriod;duties:readonly WeeklyDraftDuty[];selections:Record<number,DutySelection>;close:()=>void}){
   const coverage=validWeeklyPeriod(period)

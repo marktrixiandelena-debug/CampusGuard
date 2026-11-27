@@ -119,7 +119,7 @@ try {
   await evaluate('Array.from(document.querySelectorAll("a")).find(a=>a.getAttribute("href")===("/dashboard#my-duties")||a.getAttribute("href")===("#my-duties")).click()')
   assert.equal(await evaluate('document.activeElement.id'),'my-duties')
   assert.equal(await evaluate('document.querySelectorAll(".my-duties button").length'),0)
-  for(const path of ['/accounts','/analytics','/reports','/incidents','/lost-found','/personnel','/personnel/duty-schedule','/personnel/duty-schedule/new','/personnel/duty-schedule/selected-shift','/personnel/campus-posts','/personnel/activity-history']){
+  for(const path of ['/accounts','/analytics','/reports','/incidents','/lost-found','/personnel','/personnel/duty-schedule','/personnel/duty-schedule/new','/personnel/duty-schedule/selected-shift','/personnel/campus-posts','/personnel/assignments','/personnel/activity-history']){
     await spa(path)
     assert.equal(await evaluate('location.pathname'),'/dashboard',path)
     assert.equal(await evaluate('document.querySelector("h1").textContent'),'My Security Dashboard')

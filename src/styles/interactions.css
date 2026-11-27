@@ -35,11 +35,9 @@ button.danger:not(:disabled):active{background:#7f1322}
 .tabs{max-width:100%;overflow-x:auto}
 .field :is(input,select,textarea){max-width:100%}
 
-@media(max-width:1279px){.two-column.map-primary{grid-template-columns:1fr}}
 @media(max-width:639px){
   .tabs>a{flex:0 0 auto;min-width:max-content;padding-inline:12px}
-  .snapshot,.map-photo-actions,.map-selected-post{flex-wrap:wrap}
-  .assignment-controls>span{min-width:0;overflow-wrap:anywhere}
+  .snapshot{flex-wrap:wrap}
   dialog{padding:18px;max-width:calc(100% - 24px)}
   dialog footer{flex-wrap:wrap;gap:10px}
   .dialog-heading h2{overflow-wrap:anywhere}
@@ -47,13 +45,12 @@ button.danger:not(:disabled):active{background:#7f1322}
 
 @media(pointer:coarse),(max-width:639px){
   .application :is(button,.tabs>a,select,.search-box){min-height:44px}
-  .menu-button,.notification,.dialog-heading>button,.map-view-toggle,.record-quick-filters button{min-width:44px}
+  .menu-button,.notification,.dialog-heading>button,.record-quick-filters button{min-width:44px}
   input:not([type=checkbox]):not([type=radio]):not([type=file]),textarea{min-height:44px}
   .record-toolbar .segments,.personnel-directory .segments{height:auto;min-height:50px}
   .record-toolbar select,.record-toolbar-search .search-box{height:44px}
   .checks label{min-height:44px}
   .map-upload{min-height:44px}
-  .application :is(.map-slot,.map-slot-expanded) button.post-marker{min-width:44px;min-height:44px}
 }
 
 @keyframes dialog-enter{from{opacity:0;transform:scale(.98)}to{opacity:1;transform:scale(1)}}

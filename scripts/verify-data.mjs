@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { combinedPersonnelHistory, personnelActivity } from '../src/features/personnel/personnel-activity.ts'
 import { upcomingDutyPeriod, weeklyDuties } from '../src/features/personnel/weekly-duty-template.ts'
+import { weeklyDeployment } from '../src/features/personnel/deployment.ts'
 import { dutyResponsibility, weeklyDutyGroups } from '../src/features/personnel/weekly-duty-groups.ts'
 import { campusDateTime } from '../src/features/visitors/visitor-data.ts'
 import { mockAccounts } from '../src/features/auth/auth-data.ts'
@@ -64,6 +65,19 @@ assert.deepEqual(upcomingDutyPeriod('2026-11-27'),{start:'2026-11-30',end:'2026-
 assert.deepEqual(upcomingDutyPeriod(campusDateTime(new Date('2026-11-29T17:00:00Z')).date),{start:'2026-11-30',end:'2026-12-05'})
 assert.deepEqual(upcomingDutyPeriod('2026-12-29'),{start:'2027-01-04',end:'2027-01-09'})
 console.log('PASS: all 25 institutional duty rows and Monday–Saturday campus coverage defaults.')
+
+const roster={id:'week-1',start:'2026-10-19',end:'2026-10-24',updatedAt:'2026-10-18T00:00:00Z',duties:weeklyDuties}
+const project=(date,time='')=>weeklyDeployment([roster],date,time)
+assert.equal(project('2026-10-19')[0].duties.length,25)
+assert.equal(project('2026-10-20')[0].duties.length,29)
+assert.deepEqual(project('2026-10-25','06:00')[0].duties.map(({duty,carry})=>[duty.number,carry]),[[22,true],[23,true]])
+assert.deepEqual(project('2026-10-25','07:00'),[])
+const manila=campusDateTime(new Date('2026-10-24T22:59:00Z'))
+assert.equal(project(manila.date,manila.time)[0].duties.length,2)
+assert.deepEqual(weeklyDeployment([roster,{...roster,id:'week-2',start:'2026-10-24',end:'2026-10-31'}],'2026-10-24','08:00').map(({roster})=>roster.id),['week-2','week-1'])
+assert.ok(project('2026-10-19','14:00')[0].duties.some(({duty})=>duty.number===4))
+assert.ok(!project('2026-10-19','14:00')[0].duties.some(({duty})=>duty.number===3))
+console.log('PASS: weekly deployment recurrence, separate overlapping rosters, Manila dates and overnight boundaries.')
 
 const palette=Object.fromEntries([...readFileSync(new URL('../src/styles/index.css',import.meta.url),'utf8').matchAll(/--([\w-]+):\s*(#[\da-f]{3,6})\b/gi)].map(([,name,color])=>[name,color]))
 function luminance(color){

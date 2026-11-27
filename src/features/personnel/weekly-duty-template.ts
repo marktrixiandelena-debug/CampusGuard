@@ -70,3 +70,11 @@ export function upcomingDutyPeriod(campusDate:string){
   const start=shiftReportDate(campusDate,(8-weekday)%7)
   return {start,end:shiftReportDate(start,5)}
 }
+
+function formatDutyTime(time:string){
+  const [hour,minute]=time.split(':').map(Number)
+  return `${hour%12||12}${minute?`:${String(minute).padStart(2,'0')}`:''} ${hour<12?'AM':'PM'}`
+}
+export function formatDutyTour(duty:{start:string;end:string}){
+  return `${formatDutyTime(duty.start)}–${formatDutyTime(duty.end)}`
+}

@@ -7,10 +7,10 @@ import { CalendarClock, CircleCheck, MapPin, UserRound } from 'lucide-react'
 import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router'
 import type { FormEvent, ReactNode } from 'react'
 import { useDemo } from '../../app/store'
-import { dateLabel, overlaps, personnelDesignations, personnelResponsibilities, TODAY } from '../../data/data'
+import { dateLabel, personnelDesignations, personnelResponsibilities, TODAY } from '../../data/data'
 import type { Assignment, Person } from '../../data/data'
 import { Badge, Field, Footer, Heading, Modal, Panel, SearchBox, Segments, Select, Stats, Tabs } from '../../shared/ui/ui'
-import { dailyAssignmentsPath, personnelTabs } from '../../app/navigation'
+import { dailyAssignmentsPath, personnelAssignmentsPath, personnelTabs } from '../../app/navigation'
 import './personnel-directory.css'
 import { useLogbookFilters } from '../../shared/hooks/useLogbookFilters'
 import { DashboardContext } from '../dashboard/DashboardContext'
@@ -21,8 +21,8 @@ import { personnelActivity } from './personnel-activity'
 import { dashboardShift } from '../dashboard/dashboard-data'
 import { resolveSession } from '../auth/auth-data'
 import { campusDateTime } from '../visitors/visitor-data'
-type Stage='register'|'profile'|'date'|'weekly'|'group'|'post'|'template'|'copy'|'validate'|'publish'|'notice'|null
-const images=import.meta.glob('/public/design/*',{eager:true,query:'?url',import:'default'}) as Record<string,string>
+import PersonnelAssignments from './PersonnelAssignments'
+type Stage='register'|'profile'|null
 function requestedSchedule(params:URLSearchParams){
   const date=params.get('date')||TODAY,start=params.get('start')||dashboardShift.start,end=params.get('end')||dashboardShift.end
   const validTime=(time:string)=>/^([01]\d|2[0-3]):[0-5]\d$/.test(time)
@@ -78,8 +78,7 @@ export default function Personnel(){
   const summaryHref=useSummaryHref()
   const db=useDemo(),navigate=useNavigate(),path=useLocation().pathname
   const [params]=useSearchParams()
-  const incomingSchedule=requestedSchedule(params)
-  const posts=db.posts,postNames=posts.map(p=>p.name)
+  const {date,start,end}=requestedSchedule(params)
   const mode=path.split('/')[2]||'personnel'
   const {filters:directoryFilters,setFilter:directoryFilter}=useLogbookFilters(directoryDefaults,{},{status:['All Status','Active','Inactive'],designation:['All Designations',...personnelDesignations,'Not specified'],sort:directorySorts,display:['Table','Grid'],pageSize:['10','25','50']},{resetPageOnChange:['search','status','designation','sort','pageSize']})
   const view=directoryFilters.display,setView=(value:string)=>directoryFilter('display',value)
@@ -87,8 +86,7 @@ export default function Personnel(){
   const {search,status,designation}=directoryFilters
   const directoryFiltered=!!search||status!=='All Status'||designation!=='All Designations'
   const setSearch=(value:string)=>directoryFilter('search',value),setStatus=(value:string)=>directoryFilter('status',value)
-  const [date,setDate]=useState(incomingSchedule.date),[start,setStart]=useState(incomingSchedule.start),[end,setEnd]=useState(incomingSchedule.end)
-  const [stage,setStage]=useState<Stage>(null),[person,setPerson]=useState<Person>(),[location,setLocation]=useState(postNames[0]),[chosen,setChosen]=useState<string[]>([]),[guardSearch,setGuardSearch]=useState(''),[error,setError]=useState(''),[validation,setValidation]=useState(''),[photo,setPhoto]=useState<string>(),[pendingPost,setPendingPost]=useState(''),[movingPost,setMovingPost]=useState(''),[selectedPost,setSelectedPost]=useState(''),[mapExpanded,setMapExpanded]=useState(false),[hoveredPost,setHoveredPost]=useState('')
+  const [stage,setStage]=useState<Stage>(null),[person,setPerson]=useState<Person>(),[error,setError]=useState(''),[photo,setPhoto]=useState<string>()
   const [profileTab,setProfileTab]=useState<(typeof profileTabs)[number]>('Profile')
   const [profileEditing,setProfileEditing]=useState(false)
   const [confirmation,setConfirmation]=useState<'discard'|'deactivate'|'reactivate'|null>(null)
@@ -116,15 +114,6 @@ export default function Personnel(){
     previousPhotoMode.current=photoMode
   },[stage,photoMode])
   useEffect(()=>()=>{photoRead.current++},[])
-  const scheduleRequest=JSON.stringify([params.get('date'),params.get('start'),params.get('end')])
-  const [handledSchedule,setHandledSchedule]=useState(scheduleRequest)
-  if(scheduleRequest!==handledSchedule){
-    setHandledSchedule(scheduleRequest)
-    setDate(incomingSchedule.date)
-    setStart(incomingSchedule.start)
-    setEnd(incomingSchedule.end)
-    setValidation('')
-  }
   const current=db.assignments.filter(a=>a.date===date&&a.start===start&&a.end===end)
   const profileAssignment=current.find(assignment=>assignment.personId===person?.id)
   const otherAssignments=stage==='profile'&&profileTab==='Assignments'
@@ -134,26 +123,34 @@ export default function Personnel(){
   const profileActivity=stage==='profile'&&profileTab==='Activity'&&person
     ?personnelActivity(person.id,db.visits,db.incidents)
     :[]
-  const rosterKey=`${date}|${start}|${end}`
   const route=path.replace(/\/$/,'')
   const weeklyRecords=route===weeklySchedulePath
   const weeklyWorkspace=route===newWeeklySchedulePath
   const draftRoute=route.startsWith(weeklyDraftPath)
   const weeklyDraft=draftRoute?db.weeklyDrafts.find(row=>weeklyDraftPath+row.id===route):undefined
-  const knownMode=['/personnel',dailyAssignmentsPath,'/personnel/campus-posts','/personnel/activity-history'].includes(route)
-  const signature=JSON.stringify([db.assignments,current.map(a=>[a.personId,db.people.find(p=>p.id===a.personId)?.status])])
-  const valid=validation===`${date}${start}${end}${signature}`&&!overlaps(db.assignments)&&current.length>0&&current.every(a=>db.people.find(p=>p.id===a.personId)?.status==='Active')
   const rows=db.people.filter(p=>(status==='All Status'||p.status===status)&&(designation==='All Designations'||designationLabel(p)===designation)&&`${p.id} ${p.name} ${p.position} ${designationLabel(p)} ${responsibilityLabel(p)}`.toLowerCase().includes(search.trim().toLowerCase())).sort((a,b)=>compareLogbookRecords(a,b,directoryFilters.sort,r=>directoryFilters.sort.startsWith('Position')?r.position:directoryFilters.sort.startsWith('Personnel ID')?r.id:r.name))
   const directoryPage=useRecordPage(rows,directoryFilters.page,directoryFilters.pageSize,directoryFilter,mode==='personnel')
-  const group=(site:string)=>current.filter(a=>a.location===site)
-  const personName=(id:string)=>db.people.find(p=>p.id===id)?.name||id
-  const close=()=>{setStage(null);setError('');setGuardSearch('');resetPhoto();setFailedPhoto('');setPhotoMode(null);setProfileTab('Profile');setProfileEditing(false);setConfirmation(null)}
+  const close=()=>{
+    setStage(null);setError('');resetPhoto();setFailedPhoto('');setPhotoMode(null);setProfileTab('Profile');setProfileEditing(false);setConfirmation(null)
+    if(mode==='personnel'&&params.has('profile')){
+      const next=new URLSearchParams(params)
+      for(const key of ['profile','assignmentDate','assignmentTime'])next.delete(key)
+      navigate({search:next.toString()},{replace:true})
+    }
+  }
   const openProfile=(person:Person)=>{setNotice('');setPerson(person);setStage('profile')}
+  const profileRequest=mode==='personnel'?params.get('profile'):null
+  const [handledProfile,setHandledProfile]=useState<string|null>(null)
+  if(profileRequest!==handledProfile){
+    setHandledProfile(profileRequest)
+    const requested=db.people.find(item=>item.id===profileRequest)
+    if(requested)openProfile(requested)
+    else if(handledProfile)setStage(null)
+  }
   const linkedAccount=db.accounts.find(account=>!!person&&account.personId===person.id)
   const linkedAccess=linkedAccount&&resolveSession(db.accounts,linkedAccount.id,db.people)
   const campusNow=confirmation==='deactivate'?campusDateTime():null
   const retainedUpcoming=campusNow?db.assignments.filter(a=>a.personId===person?.id&&(a.date>campusNow.date||a.date===campusNow.date&&a.end>campusNow.time)).sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start)):[]
-  const edit=(site:string)=>{setLocation(site);setChosen(group(site).map(a=>a.personId));setStage('group')}
   function resetPhoto(value?:string){
     photoRead.current++
     setPhoto(value)
@@ -245,65 +242,12 @@ export default function Personnel(){
     mutationPending.current=true
     db.setPeople(old=>old.map(p=>p.id===person.id?{...p,status}:p))
     setPerson({...person,status})
-    if(affected.includes(rosterKey))setValidation('')
     const eventName=status==='Inactive'?'Personnel deactivated':'Personnel reactivated'
     db.activity(eventName,`${person.id} · Profile status: ${status}`,affected)
     setNotice(`${eventName} · ${person.id}`)
     setConfirmation(null)
     requestAnimationFrame(()=>profileHeading.current?.focus())
   }
-  function saveGroup(){
-    const chosenNow=new Set(chosen);
-    if(chosen.some(id=>db.people.find(p=>p.id===id)?.status!=='Active')){setError('Only active personnel can be assigned.');return}
-    const next=db.assignments.filter(a=>!(a.date===date&&a.start===start&&a.end===end&&(a.location===location||chosenNow.has(a.personId))));
-    next.push(...chosen.map(personId=>({id:crypto.randomUUID(),personId,location,date,start,end})));
-    if(overlaps(next)){setError('A selected guard has another overlapping assignment.');return}
-    db.setAssignments(next);db.activity('Group membership updated',`${location} · ${chosen.length} guards · ${date}`);close()
-  }
-  const roster=<Panel className="duty-roster" title="Duty Roster · Guard Groups" action={<button className="outline" onClick={()=>setStage('weekly')}>Week View</button>}><p className="panel-subtitle">{dateLabel(date)} · {start}–{end} · {current.length} guards in {postNames.filter(l=>group(l).length).length} mapped locations</p><div className="table-scroll"><table><thead><tr>{['Campus Location','Assigned Guard Group','Shift','Guards','Action'].map(h=><th key={h}>{h}</th>)}</tr></thead><tbody>{postNames.map((site,index)=><tr key={site} className={hoveredPost===site?'map-linked-hover':''} onMouseEnter={()=>setHoveredPost(site)} onMouseLeave={()=>setHoveredPost('')}><td><span className="roster-map-number">{index+1}</span>{site}<small className="muted block">Map pin {index+1}</small></td><td>{group(site).length?group(site).map(a=>personName(a.personId)).join(' · '):'Not assigned'}</td><td>{start}–{end}</td><td><Badge value={String(group(site).length)}/></td><td><button className="outline" onClick={()=>edit(site)}>Edit Group</button></td></tr>)}</tbody></table></div><div className="callout info">Group assignments are allowed: a location may have multiple guards on one shift. Validate each selected guard against overlapping shifts; scheduled duty is not attendance.</div></Panel>
-  function placePost(x:number,y:number){
-    if(pendingPost){
-      const name=pendingPost;
-      db.setPosts(old=>[...old,{name,x,y}]);
-      db.activity('Campus post created',name);
-      setPendingPost('');
-      edit(name);
-    }else if(movingPost){
-      db.setPosts(old=>old.map(p=>p.name===movingPost?{...p,x,y}:p));
-      db.activity('Campus post moved',movingPost);
-      setMovingPost('');
-    }
-  }
-  const placing=Boolean(pendingPost||movingPost)
-  function renamePost(){const name=prompt('Enter a new name for this campus post:',selectedPost)?.trim();if(!name||name===selectedPost)return;if(postNames.some(p=>p.toLowerCase()===name.toLowerCase())){setError('A post with that name already exists.');return}const old=selectedPost;db.setPosts(posts=>posts.map(p=>p.name===old?{...p,name}:p));db.setAssignments(rows=>rows.map(a=>a.location===old?{...a,location:name}:a));db.activity('Campus post renamed',old+' → '+name);setSelectedPost(name);setError('')}
-  function removePost(){if(!selectedPost)return;if(db.assignments.some(a=>a.location===selectedPost)){setError('Reassign guards from this post before removing it.');return}db.setPosts(posts=>posts.filter(p=>p.name!==selectedPost));db.activity('Campus post removed',selectedPost);setSelectedPost('');setMovingPost('');setError('')}
-  function uploadMapPhoto(file?:File){
-    if(!file)return
-    if(!file.type.startsWith('image/')){setError('Choose an image file.');return}
-    if(file.size>10*1024*1024){setError('Choose an image smaller than 10 MB.');return}
-    const reader=new FileReader()
-    reader.onload=()=>{if(typeof reader.result==='string'){db.setMapPhoto(reader.result);setError('')}}
-    reader.onerror=()=>setError('The image could not be opened. Try another file.')
-    reader.readAsDataURL(file)
-  }
-  const map=<Panel title="UNC Campus Map Preview" action={<button className="map-view-toggle" aria-label={mapExpanded?'Close expanded map':'Expand map'} title={mapExpanded?'Close map':'Expand map'} onClick={()=>setMapExpanded(v=>!v)}>{mapExpanded?'×':'⛶'}</button>}>
-    <p className="panel-subtitle">Select a marker to assign guards. Choose a post below to move its pin.</p>
-    <div className="map-tools">
-      {error&&<p role="alert" className="error-text">{error}</p>}
-      <div className="map-post-controls"><label className="map-post-select"><span>Manage campus post</span><select aria-label="Choose a post to manage" value={selectedPost} onChange={e=>setSelectedPost(e.target.value)}><option value="">Choose a campus post…</option>{postNames.map(name=><option key={name} value={name}>{name}</option>)}</select></label>
-      {selectedPost&&<div className="map-post-actions"><button className="outline" onClick={renamePost}>Rename</button><button className="outline" onClick={()=>{setPendingPost('');setMovingPost(selectedPost)}}>Move Pin</button><button className="danger" onClick={removePost}>Remove Post</button></div>}</div>
-      {selectedPost&&<p className="map-selected-post"><strong>{selectedPost}</strong><span>{group(selectedPost).length} guards assigned on this shift</span></p>}
-      {placing&&<p role="status">Click the map to {pendingPost?'place':'move'} <strong>{pendingPost||movingPost}</strong>. <button className="outline" onClick={()=>{setPendingPost('');setMovingPost('')}}>Cancel placement</button></p>}
-      {!images['/public/design/campus-map.png']&&!db.mapPhoto&&<p className="muted">Campus map image unavailable. Upload a campus map photo to use it as the pin background.</p>}
-    </div>
-    <div className={`${mapExpanded?'map-slot-expanded ':'map-slot '}${placing?'placing':''}`} role={placing?'button':undefined} tabIndex={placing?0:undefined} aria-label={placing?'Place post on map; press Enter to place at center':'Campus post map'}
-      onKeyDown={e=>{if(placing&&(e.key==='Enter'||e.key===' ')){e.preventDefault();placePost(50,50)}}}
-      onClick={e=>{if(!placing)return;const r=e.currentTarget.getBoundingClientRect();placePost(Math.max(0,Math.min(100,(e.clientX-r.left)/r.width*100)),Math.max(0,Math.min(100,(e.clientY-r.top)/r.height*100)))}}>
-      {(db.mapPhoto||images['/public/design/campus-map.png'])&&<img className="campus-map-image" src={db.mapPhoto||images['/public/design/campus-map.png']} alt="University of Nueva Caceres campus map"/>}
-      {posts.map((post,index)=><button className={`post-marker${mapExpanded?' named':''}${selectedPost===post.name?' selected':''}${hoveredPost===post.name?' hovered':''}`} key={post.name} aria-label={`Pin ${index+1}: ${post.name}, ${group(post.name).length} guards`} title={`${post.name} · ${group(post.name).length} guards`} style={{left:post.x+'%',top:post.y+'%'}} onMouseEnter={()=>setHoveredPost(post.name)} onMouseLeave={()=>setHoveredPost('')} onClick={e=>{e.stopPropagation();if(placing)placePost(post.x,post.y);else{setSelectedPost(post.name);edit(post.name)}}}>{mapExpanded?post.name:index+1}</button>)}
-    </div>
-    <div className="map-photo-actions"><label className="outline map-upload">{db.mapPhoto?'Replace Map Photo':'Upload Map Photo'}<input aria-label="Upload campus map photo" type="file" accept="image/*" onChange={e=>uploadMapPhoto(e.currentTarget.files?.[0])}/></label>{db.mapPhoto&&<button className="text-button" onClick={()=>{db.setMapPhoto(undefined);setError('')}}>Remove photo</button>}</div>
-  </Panel>
   const photoControls=<div className="personnel-photo-controls">
     {photo&&photo!==failedPhoto?<img src={photo} alt="Selected personnel photo" className="personnel-photo-preview" onError={()=>setFailedPhoto(photo)}/>:<div className="personnel-photo-placeholder"><UserRound size={22} aria-hidden="true"/>No photo</div>}
     <div>
@@ -320,21 +264,28 @@ export default function Personnel(){
     </div>
   </div>
   const hasPortrait=!!person?.photo&&person.photo!==failedPhoto
-  if(weeklyRecords&&['date','start','end'].some(key=>params.has(key))){
-    return <Navigate replace to={{pathname:dailyAssignmentsPath,search:params.toString()}}/>
+  if(route===dailyAssignmentsPath||(weeklyRecords&&['date','start','end'].some(key=>params.has(key)))){
+    const next=new URLSearchParams(params)
+    next.set('source','legacy')
+    next.set('date',date)
+    next.set('start',start)
+    next.set('end',end)
+    return <Navigate replace to={{pathname:personnelAssignmentsPath,search:next.toString()}}/>
   }
+  if(route==='/personnel/campus-posts')return <Navigate replace to={{pathname:personnelAssignmentsPath,search:params.toString()}}/>
+  if(route===personnelAssignmentsPath)return <><DashboardContext/><Tabs rows={personnelTabs} className="personnel-tabs"/><PersonnelAssignments/></>
   if(draftRoute&&!weeklyDraft)return <Navigate to={weeklySchedulePath} replace state={{missingDraft:true}}/>
   if(weeklyRecords||weeklyWorkspace||weeklyDraft)return <>
     <Tabs rows={personnelTabs} className="personnel-tabs"/>
     {weeklyWorkspace||weeklyDraft?<WeeklyDutyWorkspace key={weeklyDraft?.id??'new'} people={db.people} draft={weeklyDraft}/>:<WeeklyDutyRecords/>}
   </>
-  if(!knownMode)return <Navigate to="/dashboard" replace/>
+  if(route!=='/personnel'&&route!=='/personnel/activity-history')return <Navigate to="/dashboard" replace/>
   return <><DashboardContext/><Heading title="Security Personnel" subtitle="Manage personnel, scheduled shifts, campus posts and assignment history." action={<button className="primary" onClick={()=>{mutationPending.current=false;setNotice('');setStage('register')}}>＋ Add Personnel</button>}/>
   {notice&&stage!=='profile'&&<p className="callout green" role="status">{notice}</p>}
   <Stats title="Personnel overview" metadata={<>Selected schedule: {dateLabel(date)} &middot; {start} to {end}</>} context="Scheduled duty is not verified attendance. Active Personnel covers the entire directory." rows={[
-{label:'Guards Scheduled',value:new Set(current.map(a=>a.personId)).size,note:'Selected shift; scheduled duty is not attendance',action:'View duty roster',href:summaryHref(dailyAssignmentsPath,{date,start,end})},
+{label:'Guards Scheduled',value:new Set(current.map(a=>a.personId)).size,note:'Selected shift; scheduled duty is not attendance',action:'View duty roster',href:summaryHref(personnelAssignmentsPath,{source:'legacy',date,start,end})},
 {label:'Active Personnel',value:db.people.filter(p=>p.status==='Active').length,note:'Active profiles across the directory',action:'View active personnel',href:summaryHref('/personnel',{date,start,end,status:'Active'})},
-{label:'Locations with Assignments',value:postNames.filter(site=>group(site).length).length,note:'Selected shift; does not confirm required-post coverage',action:'View campus posts',href:summaryHref('/personnel/campus-posts',{date,start,end})}]}/><Tabs rows={personnelTabs} className="personnel-tabs"/>
+{label:'Locations with Assignments',value:new Set(current.map(a=>a.location)).size,note:'Selected shift; does not confirm required-post coverage',action:'View personnel assignments',href:summaryHref(personnelAssignmentsPath,{source:'legacy',date,start,end})}]}/><Tabs rows={personnelTabs} className="personnel-tabs"/>
   {mode==='personnel'&&<Panel title="Personnel Directory" className="personnel-directory" action={<small className="muted" aria-live="polite">{rows.length} of {db.people.length} personnel</small>}>
     <div className="filter-row directory-filters">
       <SearchBox value={search} change={setSearch} placeholder="Search ID, name or position..."/>
@@ -348,16 +299,8 @@ export default function Personnel(){
       <td>{p.position}<small className="muted block">{designationLabel(p)}</small></td><td>{responsibilityLabel(p)}</td><td>{current.find(a=>a.personId===p.id)?.location||<span className="muted">Not scheduled</span>}</td><td><Badge value={p.status}/></td><td><button className="text-button directory-view" aria-label={`View profile for ${p.name}`} onClick={()=>openProfile(p)}>View profile <span aria-hidden="true">→</span></button></td>
     </tr>):<tr><td colSpan={6} className="empty"><RecordEmpty total={db.people.length} active={directoryFiltered} noun="personnel" clear={clearDirectory}/></td></tr>}</tbody></table></div></ResponsiveRecords>:<div className="item-grid">{directoryPage.rows.map(p=><article className="item-card personnel-card" key={p.id}><div className="item-photo">{p.photo?<img src={p.photo} alt={`${p.name} personnel photo`}/>:<span aria-label="No photo">No photo</span>}</div><div className="item-info"><div className="module-heading"><h3>{p.name}</h3><Badge value={p.status}/></div><p>{p.position} · {designationLabel(p)}</p>{p.organizationalResponsibility&&<p>{p.organizationalResponsibility}</p>}<small className="muted block">{p.id}</small><button className="outline" onClick={()=>openProfile(p)}>View Profile</button></div></article>)}{!rows.length&&<div className="directory-empty empty"><RecordEmpty total={db.people.length} active={directoryFiltered} noun="personnel" clear={clearDirectory}/></div>}</div>}
   <RecordPagination {...directoryPage} total={rows.length} change={directoryFilter}/></Panel>}
-  {(mode==='duty-schedule'||mode==='campus-posts')&&<><div className="panel assignment-controls schedule-toolbar"><div className="schedule-selection"><small className="muted block">Date &amp; Shift</small><strong>{dateLabel(date)} &middot; {start}&ndash;{end}</strong><button className="text-button" onClick={()=>setStage('date')}>Change</button><Badge value={valid?(db.rosterStates[rosterKey]||'Checked'):'Draft'}/></div><div className="schedule-actions"><button className="outline" onClick={()=>{setError('');setStage('post')}}>Add Campus Post</button><button className="outline" onClick={()=>setStage('copy')}>Copy Another Schedule</button><button className="outline" onClick={()=>setStage('template')}>Apply Template</button></div><div className="schedule-checks"><button className={valid?'outline':'primary'} onClick={()=>{setValidation(`${date}${start}${end}${signature}`);setStage('validate')}}>Check Schedule</button><button className={valid?'primary':'outline'} disabled={!valid} onClick={()=>setStage('publish')}>Publish Schedule</button>{!valid&&<small className="muted">{!current.length?'Add guard assignments first.':overlaps(db.assignments)||current.some(a=>db.people.find(p=>p.id===a.personId)?.status!=='Active')?'Resolve assignment conflicts or inactive personnel before publishing.':'Check this schedule before publishing.'}</small>}</div></div>{mode==='duty-schedule'?<div className="two-column map-primary">{roster}{map}</div>:<div className="two-column">{map}<Panel title="Location Assignment Groups" action={<button className="outline" onClick={()=>edit(postNames[0])}>Assign / Edit Group</button>}><div className="group-list">{postNames.map(site=><div className="group-row" key={site}><div><h3>{site}</h3><p>{group(site).map(a=>personName(a.personId)).join(' · ')||'Not assigned'}</p><p>{start}–{end} · {group(site).length} guards</p></div><button className="outline" onClick={()=>edit(site)}>View Group</button></div>)}</div></Panel></div>}</>}
   {mode==='activity-history'&&<PersonnelActivityHistory/>}
-  {stage&&<Modal key={stage} title={({register:'Register Personnel',profile:profileEditing?'Edit Personnel Profile':'Personnel Profile',date:'Select Date and Shift',weekly:'Weekly Duty Schedule',group:'Assign Guard Group',post:'Add Campus Post',template:'Load Schedule Template',copy:'Copy Previous Schedule',validate:'Schedule Validation',publish:'Publish Duty Schedule',notice:'Prototype Action Only'})[stage]} close={close} onDismissRequest={profileEditing?requestProfileDismiss:undefined} wide={stage==='group'} subtitle={stage==='register'?'Add a new member to the security personnel directory.':undefined}>{dismiss=><>
-  {stage==='post'&&<form onSubmit={e=>{e.preventDefault();const name=String(new FormData(e.currentTarget).get('postName')||'').trim();if(!name||postNames.some(p=>p.toLowerCase()===name.toLowerCase())){setError('Enter a unique post name.');return}setPendingPost(name);setMovingPost('');close()}}>
-    <Field label="Post name *"><input name="postName" required maxLength={80} autoFocus placeholder="e.g. Science Building"/></Field>
-    <p>Next, click the map to pinpoint this post. You can assign guards after placing it.</p>
-    {error&&<p className="error-text" role="alert">{error}</p>}
-    <Footer close={dismiss}><button className="primary" type="submit">Place on Map</button></Footer>
-  </form>}
-  {stage==='notice'&&<><p>No history file was exported. This action demonstrates the designed export control using fictional local activity only.</p><Footer close={dismiss}/></>}
+  {stage&&<Modal key={stage} title={stage==='register'?'Register Personnel':profileEditing?'Edit Personnel Profile':'Personnel Profile'} close={close} onDismissRequest={profileEditing?requestProfileDismiss:undefined} subtitle={stage==='register'?'Add a new member to the security personnel directory.':undefined}>{dismiss=><>
   {stage==='register'&&<form className="personnel-register" onSubmit={register}>
     <p className="muted">Personnel ID is generated on save.</p>
     <PersonnelFields people={db.people} photo={photoControls}/>
@@ -430,13 +373,12 @@ export default function Personnel(){
         <CircleCheck size={17} aria-hidden="true"/><div><strong>{entry.kind}</strong><p>{dateLabel(entry.date)} &middot; {entry.time} &middot; {entry.location}</p><small>{entry.id}</small></div>
       </li>)}</ol>:<p className="personnel-profile-empty">No linked activity recorded for this person.</p>}
     </section>
-    <footer><button type="button" className="outline" onClick={dismiss}>Close</button>{profileTab==='Assignments'&&<button type="button" className="primary" onClick={()=>{close();navigate({pathname:dailyAssignmentsPath,search:new URLSearchParams({date,start,end}).toString()})}}>View Duty Schedule</button>}</footer>
+    <footer><button type="button" className="outline" onClick={dismiss}>Close</button>{profileTab==='Assignments'&&<button type="button" className="primary" onClick={()=>{
+      const next=new URLSearchParams({person:person.id})
+      for(const [source,target] of [['assignmentDate','date'],['assignmentTime','time']]){const value=params.get(source);if(value)next.set(target,value)}
+      close();navigate({pathname:personnelAssignmentsPath,search:next.toString()})
+    }}>View Assignments</button>}</footer>
   </div>)}
-  {stage==='group'&&<><div className="callout info"><strong>{location}</strong><p>{dateLabel(date)} · {start}–{end} · {chosen.length} guards selected</p></div><SearchBox value={guardSearch} change={setGuardSearch} placeholder="Search personnel name or ID..."/><div className="checks">{db.people.filter(p=>`${p.name} ${p.id}`.toLowerCase().includes(guardSearch.toLowerCase())).map(p=>{const conflict=db.assignments.find(a=>a.personId===p.id&&a.date===date&&a.location!==location&&a.start<end&&start<a.end);return <label key={p.id}><input type="checkbox" checked={chosen.includes(p.id)} disabled={p.status!=='Active'&&!chosen.includes(p.id)} onChange={e=>setChosen(old=>e.target.checked?[...old,p.id]:old.filter(id=>id!==p.id))}/>{p.photo?<img src={p.photo} alt="" width="40" height="40" style={{objectFit:'cover',borderRadius:'50%',verticalAlign:'middle',marginRight:10}}/>:<span aria-hidden="true" style={{display:'inline-grid',placeItems:'center',width:40,height:40,borderRadius:'50%',background:'#e2e8f0',color:'#334155',marginRight:10}}>{p.name.split(' ').map(n=>n[0]).slice(0,2).join('')}</span>}<span>{p.name}<small className="muted block">{p.id} · {conflict&&!chosen.includes(p.id)?`Move from ${conflict.location}`:p.status!=='Active'?'Inactive':chosen.includes(p.id)?'Selected':'Available'}</small></span></label>})}</div><div className="callout info">Selecting a guard assigned elsewhere in this shift moves them to this location. Inactive profiles cannot be assigned.</div>{error&&<p className="error-text" role="alert">{error}</p>}<Footer close={dismiss}><button className="primary" onClick={saveGroup}>Save Group Draft</button></Footer></>}
-  {stage==='template'&&<form onSubmit={e=>{e.preventDefault();const next:Assignment[]=db.people.filter(p=>p.status==='Active').slice(0,6).map((p,i)=>({id:crypto.randomUUID(),personId:p.id,date,start,end,location:postNames[i<2?0:i<4?1:i-2]}));const rest=db.assignments.filter(a=>!(a.date===date&&a.start===start&&a.end===end));if(overlaps([...rest,...next])){setError('The template conflicts with other assignments. Review the selected shift.');return}if(current.length&&!new FormData(e.currentTarget).get('replace')){setError('Confirm replacement of the existing assignments below.');return}db.setAssignments([...rest,...next]);db.activity('Template applied',`${date} · ${start}–${end}`);close()}}><Field label="Template *"><select><option>Day Shift · Four Campus Locations</option></select></Field><div className="callout"><strong>Template preview</strong><p>Shift hours: {start}–{end}. Up to six active personnel across four reference locations.</p><p>Applying a template does not publish a roster.</p></div>{error&&<p className="error-text" role="alert">{error}</p>}<label className="field"><span><input type="checkbox" name="replace"/> Replace existing assignments if this shift already has records</span></label><Footer close={dismiss}><button className="primary" type="submit">Apply Template</button></Footer></form>}
-  {stage==='copy'&&<form onSubmit={e=>{e.preventDefault();const d=new FormData(e.currentTarget),source=String(d.get('source')),destination=String(d.get('destination'));if(source===destination){setError('Choose a different destination date.');return}const originals=db.assignments.filter(a=>a.date===source&&a.start===start&&a.end===end);if(originals.some(a=>db.people.find(p=>p.id===a.personId)?.status!=='Active')){setError('Only active personnel can be copied.');return}if(!originals.length){setError('No sample assignments exist for that date and shift.');return}const next=[...db.assignments.filter(a=>!(a.date===destination&&a.start===start&&a.end===end)),...originals.map(a=>({...a,id:crypto.randomUUID(),date:destination}))];if(overlaps(next)){setError('Copied assignments would overlap an existing shift.');return}if(db.assignments.some(a=>a.date===destination&&a.start===start&&a.end===end)&&!d.get('replace')){setError('Confirm replacement of the destination assignments below.');return}db.setAssignments(next);db.activity('Roster copied',`${source} → ${destination}`);setDate(destination);close()}}><div className="form-grid"><Field label="Source Date *"><input name="source" type="date" defaultValue={TODAY} required/></Field><Field label="Destination Date *"><input name="destination" type="date" defaultValue={date===TODAY?'2026-10-26':date} required/></Field></div><div className="callout amber">Copied personnel and posts must be revalidated for the new date.</div>{error&&<p className="error-text" role="alert">{error}</p>}<label className="field"><span><input type="checkbox" name="replace"/> Replace existing assignments if this shift already has records</span></label><Footer close={dismiss}><button className="primary" type="submit">Copy Schedule</button></Footer></form>}
-  {stage==='validate'&&<><div className="callout amber"><strong>Coverage requirements not yet confirmed</strong><p>UNC must approve required posts and staffing for each shift.</p></div><div className="report-preview-section"><strong>Personnel schedule overlaps</strong><p>{overlaps(db.assignments)?'Conflicting assignments detected.':'No overlapping assignments detected in the local sample.'}</p></div><div className="report-preview-section"><strong>Required post coverage</strong><p>{current.length} scheduled staff across {postNames.filter(l=>group(l).length).length} reference groups; official coverage remains unknown.</p></div><div className="report-preview-section"><strong>Personnel eligibility</strong><p>Only active profiles can be assigned. This is not verified attendance.</p></div><Footer close={dismiss}><button className="primary" onClick={dismiss}>Review Draft</button></Footer></>}
-  {stage==='publish'&&<><div className="callout amber"><strong>Sample publication only</strong><p>Official post coverage and approval remain unverified. This action updates only the fictional local roster.</p></div><dl className="details-grid"><div><dt>Selected Shift</dt><dd>{dateLabel(date)} · {start}–{end}</dd></div><div><dt>Assigned Personnel</dt><dd>{current.length}</dd></div></dl><Footer close={dismiss}><button className="primary" disabled={!valid} onClick={()=>{if(!valid)return;db.activity('Roster published',`${date} · ${start}–${end} · ${current.length} guards`);db.setRosterStatus('Published',rosterKey);close()}}>Publish Roster</button></Footer></>}
   </>}</Modal>}
   {confirmation&&person&&<Modal title={confirmation==='discard'?'Discard profile changes?':confirmation==='deactivate'?'Deactivate Personnel':'Reactivate Personnel'} close={keepProfile}>{dismiss=><>
     {confirmation==='discard'?<p>Your unsaved profile changes will be lost.</p>:<>

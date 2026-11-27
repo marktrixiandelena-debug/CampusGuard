@@ -5,10 +5,12 @@ import { authReducer, mockAccounts, resolveSession } from '../features/auth/auth
 import type { GuardAccountChange, UserRole } from '../features/auth/auth-data'
 import { overlappingDrafts, validWeeklyPeriod } from '../features/personnel/weekly-draft'
 import type { WeeklyDraft } from '../features/personnel/weekly-draft'
+import type { CampusPost, DutyPostLinks } from '../features/personnel/deployment'
 
 import * as seed from '../data/data'
 export function useStoreValue(){
-  const [posts,setPosts]=useState(seed.locations.map((name,i)=>({name,x:15+i*20,y:25+(i%2)*35})))
+  const [posts,setPosts]=useState<CampusPost[]>(seed.locations.map((name,i)=>({id:`post-${i+1}`,name,legacyName:name})))
+  const [dutyPostLinks,setDutyPostLinks]=useState<DutyPostLinks>({})
   const [mapPhoto,setMapPhoto]=useState<string>()
   // shortcut: visitor transactions are in memory; use server transactions when persistence is introduced.
   const [visitorState,dispatchVisitor]=useReducer(visitorReducer,{profiles:visitorProfiles,visits:seed.visits,result:null})
@@ -59,7 +61,7 @@ export function useStoreValue(){
     if(!affectedRosters)setRosterStates({})
     else if(affectedRosters.length)setRosterStates(old=>Object.fromEntries(Object.entries(old).filter(([key])=>!affectedRosters.includes(key))))
   }
-  return {currentUser,accounts:authState.accounts,authResult:authState.result,enterDemo,logout,manageGuardAccount,visits,visitorProfiles:visitorState.profiles,visitorResult:visitorState.result,checkInVisitor,checkOutVisitor,incidents,setIncidents,items,setItems,people,setPeople,assignments,setAssignments,weeklyDrafts,saveWeeklyDraft,posts,setPosts,mapPhoto,setMapPhoto,rosterStates,setRosterStatus,activities,activity}
+  return {currentUser,accounts:authState.accounts,authResult:authState.result,enterDemo,logout,manageGuardAccount,visits,visitorProfiles:visitorState.profiles,visitorResult:visitorState.result,checkInVisitor,checkOutVisitor,incidents,setIncidents,items,setItems,people,setPeople,assignments,setAssignments,weeklyDrafts,saveWeeklyDraft,posts,setPosts,dutyPostLinks,setDutyPostLinks,mapPhoto,setMapPhoto,rosterStates,setRosterStatus,activities,activity}
 }
 export const DemoContext=createContext<ReturnType<typeof useStoreValue>|null>(null)
 
