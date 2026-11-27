@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, ChevronDown, FileText, PanelRight, Plus, Search, Undo2 } from 'lucide-react'
+import { ArrowLeft, ChevronDown, FileText, ListFilter, Moon, PanelRight, Plus, Search, Sun, Undo2, X } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router'
 import { dailyAssignmentsPath } from '../../app/navigation'
 import { useDemo } from '../../app/store'
@@ -341,11 +341,14 @@ export function WeeklyDutyWorkspace({people,draft}:{people:readonly Person[];dra
                 {selectedPerson&&<button type="button" className="text-button weekly-cancel-assignment" onClick={cancelAssignment}>Cancel assignment</button>}
               </p>:<p className="muted">Select a vacant duty or choose personnel first.</p>}
             </div>
-            <Select label="Filter duty assignments" value={filter} options={['All duties','Unassigned duties','Day shift','Night shift']}
-              change={value=>{
-                setFilter(value)
-                if(selectedDuty&&!matchesFilter(selectedDuty,value))setTarget(undefined)
-              }}/>
+            <label className="weekly-duty-filter">
+              <span><ListFilter size={14} aria-hidden="true"/>Filter duties</span>
+              <Select label="Filter duty assignments" value={filter} options={['All duties','Unassigned duties','Day shift','Night shift']}
+                change={value=>{
+                  setFilter(value)
+                  if(selectedDuty&&!matchesFilter(selectedDuty,value))setTarget(undefined)
+                }}/>
+            </label>
           </div>
           <div className="weekly-group-actions">
             <button type="button" className="text-button" disabled={expandedGroups.size===weeklyDutyGroups.length}
@@ -373,8 +376,9 @@ export function WeeklyDutyWorkspace({people,draft}:{people:readonly Person[];dra
                 const visible=group.visible.filter(duty=>duty.shift===shift)
                 if(!visible.length)return null
                 const shiftId=`${groupButtonId}-${shift}`
+                const ShiftIcon=shift==='Day'?Sun:Moon
                 return <section className="weekly-shift" key={shift} aria-labelledby={shiftId}>
-                <h4 id={shiftId}>{shift} Shift</h4>
+                <h4 id={shiftId}><ShiftIcon size={14} aria-hidden="true"/>{shift} Shift</h4>
                 <table className="weekly-duty-table" role="table" aria-labelledby={`${groupButtonId} ${shiftId}`}>
                 <thead role="rowgroup"><tr role="row"><th scope="col">Responsibility</th><th scope="col">Tour of Duty</th><th scope="col">Personnel</th></tr></thead>
                 <tbody role="rowgroup">{visible.map((duty,index)=>{
@@ -391,11 +395,11 @@ export function WeeklyDutyWorkspace({people,draft}:{people:readonly Person[];dra
                   <td role="cell" className="weekly-duty-hours">{formatDutyTour(duty)}
                     {duty.end<duty.start&&<small className="muted">Ends next day</small>}
                   </td>
-                  <td role="cell" className="weekly-duty-personnel">{selections[duty.number]?<>
+                  <td role="cell" className="weekly-duty-personnel">{selections[duty.number]?<div className="weekly-assigned-person">
                     <span className="weekly-assigned-name">{selections[duty.number].name}</span>
-                    <button type="button" className="text-button weekly-remove-button" data-duty={duty.number}
-                      aria-label={`Remove assignment: ${slotLabel}`} onClick={()=>remove(duty.number)}>Remove assignment</button>
-                    </>:target===duty.number?
+                    <button type="button" className="weekly-remove-button" data-duty={duty.number} title="Remove assignment"
+                      aria-label={`Remove assignment: ${slotLabel}`} onClick={()=>remove(duty.number)}><X size={16} aria-hidden="true"/></button>
+                    </div>:target===duty.number?
                     <button type="button" className="outline weekly-cancel-assignment" onClick={cancelAssignment}>Cancel assignment</button>:
                     <button type="button" className="outline weekly-assign-button" data-duty={duty.number}
                       aria-label={`Assign: ${slotLabel}`} onClick={()=>chooseDuty(duty.number)}>
