@@ -1,4 +1,5 @@
-import { createContext, useContext, useReducer, useState } from 'react'
+import { createContext, useCallback, useContext, useReducer, useState } from 'react'
+import type { SetStateAction } from 'react'
 import { campusDateTime, visitorProfiles, visitorReducer } from '../features/visitors/visitor-data'
 import type { CheckInInput, CheckOutInput } from '../features/visitors/visitor-data'
 import { authReducer, mockAccounts, resolveSession } from '../features/auth/auth-data'
@@ -6,6 +7,10 @@ import type { GuardAccountChange, UserRole } from '../features/auth/auth-data'
 import { overlappingDrafts, validWeeklyPeriod } from '../features/personnel/weekly-draft'
 import type { WeeklyDraft } from '../features/personnel/weekly-draft'
 import type { CampusPost, DutyPostLinks } from '../features/personnel/deployment'
+import { itemDocumentPrefill, itemDocumentTemplate } from '../features/lost-found/item-documents'
+import type { ItemDocument, NewItemDocument } from '../features/lost-found/item-documents'
+import { buildItemRecord } from '../features/lost-found/item-intake'
+import type { ItemIntake } from '../features/lost-found/item-intake'
 
 import * as seed from '../data/data'
 export function useStoreValue(){
@@ -16,7 +21,10 @@ export function useStoreValue(){
   const [visitorState,dispatchVisitor]=useReducer(visitorReducer,{profiles:visitorProfiles,visits:seed.visits,result:null})
   const visits=visitorState.visits
   const [incidents,setIncidents]=useState(seed.incidents)
-  const [items,setItems]=useState(seed.items)
+  const [{items,itemDocuments},setLostFound]=useState({items:seed.items,itemDocuments:[] as ItemDocument[]})
+  const setItems=useCallback((update:SetStateAction<seed.Item[]>)=>{
+    setLostFound(previous=>({...previous,items:typeof update==='function'?update(previous.items):update}))
+  },[])
   const [people,setPeople]=useState(seed.people)
   const [assignments,setAssignments]=useState(seed.assignments)
   const [weeklyDrafts,setWeeklyDrafts]=useState<WeeklyDraft[]>([])
@@ -29,6 +37,28 @@ export function useStoreValue(){
     return requestId
   }
   function logout(){dispatchAuth({type:'logout'})}
+  function saveItemDocument(input:NewItemDocument){
+    const item=items.find(record=>record.id===input.itemId)
+    if(!item||!input.id||currentUser?.role!=='Security Head'||itemDocumentTemplate(item)!==input.template)return false
+    const document:ItemDocument={...input,fields:{...input.fields,...itemDocumentPrefill(item)},
+      createdAt:new Date().toISOString(),preparedBy:{id:currentUser.accountId,name:currentUser.name}}
+    setLostFound(previous=>previous.itemDocuments.some(saved=>saved.id===document.id)?previous:
+      {...previous,itemDocuments:[document,...previous.itemDocuments]})
+    return true
+  }
+  function createItemRecord(id:string,input:ItemIntake,form?:NewItemDocument){
+    if(currentUser?.role!=='Security Head')return false
+    const item=buildItemRecord(id,input,campusDateTime().date)
+    if(!item||(form&&(!form.id||form.itemId!==id||itemDocumentTemplate(item)!==form.template)))return false
+    const document=form&&{...form,fields:{...form.fields,...itemDocumentPrefill(item)},
+      createdAt:new Date().toISOString(),preparedBy:{id:currentUser.accountId,name:currentUser.name}}
+    setLostFound(previous=>{
+      if(previous.items.some(existing=>existing.id===id)||
+        (document&&previous.itemDocuments.some(saved=>saved.id===document.id)))return previous
+      return {items:[item,...previous.items],itemDocuments:document?[document,...previous.itemDocuments]:previous.itemDocuments}
+    })
+    return true
+  }
   function saveWeeklyDraft(draft:WeeklyDraft){
     if(currentUser?.role!=='Security Head'||!validWeeklyPeriod(draft))return
     setWeeklyDrafts(previous=>{
@@ -61,7 +91,7 @@ export function useStoreValue(){
     if(!affectedRosters)setRosterStates({})
     else if(affectedRosters.length)setRosterStates(old=>Object.fromEntries(Object.entries(old).filter(([key])=>!affectedRosters.includes(key))))
   }
-  return {currentUser,accounts:authState.accounts,authResult:authState.result,enterDemo,logout,manageGuardAccount,visits,visitorProfiles:visitorState.profiles,visitorResult:visitorState.result,checkInVisitor,checkOutVisitor,incidents,setIncidents,items,setItems,people,setPeople,assignments,setAssignments,weeklyDrafts,saveWeeklyDraft,posts,setPosts,dutyPostLinks,setDutyPostLinks,mapPhoto,setMapPhoto,rosterStates,setRosterStatus,activities,activity}
+  return {currentUser,accounts:authState.accounts,authResult:authState.result,enterDemo,logout,manageGuardAccount,visits,visitorProfiles:visitorState.profiles,visitorResult:visitorState.result,checkInVisitor,checkOutVisitor,incidents,setIncidents,items,setItems,itemDocuments,saveItemDocument,createItemRecord,people,setPeople,assignments,setAssignments,weeklyDrafts,saveWeeklyDraft,posts,setPosts,dutyPostLinks,setDutyPostLinks,mapPhoto,setMapPhoto,rosterStates,setRosterStatus,activities,activity}
 }
 export const DemoContext=createContext<ReturnType<typeof useStoreValue>|null>(null)
 

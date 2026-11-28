@@ -6,10 +6,41 @@ import { weeklyDeployment } from '../src/features/personnel/deployment.ts'
 import { dutyResponsibility, weeklyDutyGroups } from '../src/features/personnel/weekly-duty-groups.ts'
 import { campusDateTime } from '../src/features/visitors/visitor-data.ts'
 import { mockAccounts } from '../src/features/auth/auth-data.ts'
+import { itemDocumentPrefill, itemDocumentTemplate } from '../src/features/lost-found/item-documents.ts'
+import { buildItemRecord, intakeFromDocument } from '../src/features/lost-found/item-intake.ts'
 import { assignments, incidents, items, overlaps, people, periodMatches, TODAY, visits } from '../src/data/data.ts'
 
 assert.equal(visits.filter(v=>v.date===TODAY&&v.outcome==='Entered').length,19)
 assert.equal(items.filter(i=>i.type==='Found'&&i.status!=='Returned').length,5)
+const lostFormItem=items.find(item=>item.id==='LF-010')
+const foundFormItem=items.find(item=>item.id==='LF-001')
+assert.equal(itemDocumentTemplate(lostFormItem),'lost')
+assert.equal(itemDocumentTemplate(foundFormItem),'found')
+assert.deepEqual(itemDocumentPrefill(lostFormItem),{
+  referenceNumber:lostFormItem.id,itemName:lostFormItem.name,itemDescription:lostFormItem.description,
+  reportedAt:lostFormItem.date+'T'+lostFormItem.time,lastKnownLocation:lostFormItem.location,reporterName:lostFormItem.reporter,contact:lostFormItem.contact,
+})
+const foundFields=itemDocumentPrefill(foundFormItem)
+assert.equal(foundFields.foundLocation,foundFormItem.location)
+assert.equal(foundFields.finderName,undefined)
+assert.equal(foundFields.contact,undefined)
+assert.equal(foundFields.foundAt,undefined)
+assert.equal(itemDocumentPrefill({...foundFormItem,date:'2026-02-31',time:'25:00'}).reportedAt,undefined)
+const fromForm=intakeFromDocument('found',{
+  itemName:' Umbrella ',itemDescription:' Blue fabric ',foundLocation:' Library ',reportedAt: TODAY+'T14:20',
+  category:'Personal Items',reporterType:'Guard',recordReporter:'Security staff',finderName:'A different finder',
+})
+const formItem=buildItemRecord('LF-check',fromForm,TODAY)
+assert.equal(formItem.reporter,'Security staff')
+assert.equal(formItem.name,'Umbrella')
+assert.equal(formItem.status,'Unclaimed')
+assert.equal(formItem.time,'14:20')
+assert.deepEqual(buildItemRecord('LF-check',{
+  type:'Found',name:'Umbrella',description:'Blue fabric',location:'Library',date:TODAY,time:'14:20',
+  category:'Personal Items',reporterType:'Guard',reporter:'Security staff',contact:'',photo:undefined,
+},TODAY),formItem)
+assert.equal(buildItemRecord('LF-check',{...fromForm,date:'2999-01-01'},TODAY),undefined)
+assert.equal(buildItemRecord('LF-check',{...fromForm,reporter:''},TODAY),undefined)
 assert.equal(incidents.filter(i=>i.status==='Open').length,2)
 assert.equal(assignments.filter(a=>a.date===TODAY).length,6)
 assert.equal(overlaps(assignments),false)

@@ -2,6 +2,18 @@
 .lost-found-grid .item-card{min-width:0}
 .lost-found-grid .module-heading h3{overflow-wrap:anywhere;min-width:0}
 .lost-found-grid>.empty{grid-column:1/-1}
+.lf-workspace-tabs{margin-bottom:16px}
+.lf-document-actions{display:flex;flex-wrap:wrap;gap:8px}
+.lf-document-actions button,.lf-template-choices button,.lf-template-list button,.lf-document-item-link{min-height:44px}
+.lf-template-choices{display:grid;gap:8px}
+.lf-template-list{list-style:none;margin:0;padding:0 16px 12px}
+.lf-template-list li{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 14px;padding:10px 0;border-bottom:1px solid var(--border)}
+.lf-template-list li:last-child{border-bottom:0}
+.lf-document-filters .search-box{min-width:min(180px,100%)}
+.lf-document-filters select{min-height:44px}
+.lf-document-table{white-space:normal}
+.lf-document-table :is(th,td){padding:9px 12px;overflow-wrap:anywhere}
+.lf-document-item-link{font-weight:600;color:var(--info);text-decoration:underline;text-underline-offset:2px}
 dialog.lost-item-dialog[open]{display:flex;flex-direction:column;width:min(820px,calc(100% - 24px));max-height:calc(100dvh - 24px);overflow:hidden}
 .lost-item-dialog>.dialog-heading{flex-shrink:0}
 .lost-item-content{display:flex;flex-direction:column;min-height:0;overflow:hidden}
@@ -25,6 +37,12 @@ dialog.lost-item-dialog[open]{display:flex;flex-direction:column;width:min(820px
 .lost-item-dialog .lost-item-section h3{font-size:15px;margin:0 0 8px}
 .lost-item-section p,.lost-item-history p{font-size:13px;line-height:1.7;overflow-wrap:anywhere}
 .lost-item-description{white-space:pre-wrap}
+.lf-associated-documents :is(.lf-associated-header,li){display:flex;justify-content:space-between;align-items:center;gap:8px 12px;flex-wrap:wrap}
+.lf-associated-documents .lf-associated-header{margin-bottom:8px}
+.lost-item-dialog .lf-associated-header h3{margin:0}
+.lf-associated-documents button{min-height:44px}
+.lf-associated-documents ul{margin:0;padding:0;list-style:none}
+.lf-associated-documents li{padding:8px 0;border-top:1px solid var(--border)}
 .lost-item-match-summary{display:flex;align-items:flex-start;gap:10px;font-size:13px;line-height:1.6}
 .lost-item-match-summary>svg{flex-shrink:0;margin-top:2px;color:var(--text-secondary)}
 .lost-item-match-summary strong{font-weight:600;overflow-wrap:anywhere}

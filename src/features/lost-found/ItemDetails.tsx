@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, Package, Search, ZoomIn } from 'lucide-react'
 import type { Item } from '../../data/data'
+import type { ItemDocument } from './item-documents'
+import { itemDocumentTemplate, itemDocumentTitles } from './item-documents'
 import { dateLabel } from '../../data/data'
 import { campusDateTime } from '../visitors/visitor-data'
 import { Badge } from '../../shared/ui/ui'
@@ -32,7 +34,10 @@ export function ReleaseFacts({item}:{item:Item}){
   </dl>
 }
 
-export default function ItemDetails({item,linked,handover=item,close,actionLabel,advance}:{item:Item;linked?:Item;handover?:Item;close:()=>void;actionLabel:string;advance:()=>void}){
+export default function ItemDetails({item,linked,handover=item,close,actionLabel,advance,documents,onPrepare,onOpenDocument}:{
+  item:Item; linked?:Item; handover?:Item; close:()=>void; actionLabel:string; advance:()=>void
+  documents:readonly ItemDocument[]; onPrepare:()=>void; onOpenDocument:(document:ItemDocument)=>void
+}){
   const [expanded,setExpanded]=useState(false),[failedPhoto,setFailedPhoto]=useState('')
   const body=useRef<HTMLDivElement>(null),trigger=useRef<HTMLButtonElement>(null),photoHeading=useRef<HTMLHeadingElement>(null),itemHeading=useRef<HTMLHeadingElement>(null)
   const savedScroll=useRef(0),wasExpanded=useRef(false)
@@ -42,6 +47,7 @@ export default function ItemDetails({item,linked,handover=item,close,actionLabel
   const hasReleaseFacts=!!(handover.recipient||handover.releaseLocation||release)
   const returned=item.status==='Returned'||handover.status==='Returned'
   const verified=!!(handover.ownershipVerified||verification)
+  const template=itemDocumentTemplate(item)
   const history=(item.history??[]).flatMap(entry=>{
     if(entry==='Ownership verified by sample Security Head.')return verification?[]:['Ownership verified. Actor and time not recorded.']
     if(entry==='Physical handover confirmed by sample Security Head.')return release?[]:['Physical handover confirmed. Actor and time not recorded.']
@@ -79,6 +85,18 @@ export default function ItemDetails({item,linked,handover=item,close,actionLabel
         </div></div></section>}
         {hasOwnershipFacts&&<section className="lost-item-section"><h3>Ownership verification</h3><OwnershipFacts item={handover}/></section>}
         {(hasReleaseFacts||returned)&&<section className="lost-item-section"><h3>Physical handover</h3>{hasReleaseFacts?<ReleaseFacts item={handover}/>:<p className="muted">Handover details not recorded.</p>}</section>}
+        {template&&<section className="lost-item-section lf-associated-documents">
+          <div className="lf-associated-header"><h3>Associated Documents</h3>
+            <button type="button" className="outline" onClick={onPrepare}>Prepare {itemDocumentTitles[template]}</button>
+          </div>
+          {documents.length?<ul>{documents.map((document,index)=><li key={document.id}>
+            <div><strong>{itemDocumentTitles[document.template]}</strong>
+              <p className="muted"><ActionTime at={document.createdAt}/> · {document.preparedBy.name}</p>
+            </div>
+            <button type="button" className="outline" aria-label={`Open ${itemDocumentTitles[document.template]} ${index+1}`}
+              onClick={()=>onOpenDocument(document)}>Open form</button>
+          </li>)}</ul>:<p className="muted">No forms saved for this item.</p>}
+        </section>}
         <details className="lost-item-history"><summary>Activity history</summary>
           {history.map((entry,index)=><p key={index}>{entry}</p>)}
           {verification&&<p><strong>Ownership verified</strong> · {verification.actorName} · <ActionTime at={verification.at}/></p>}
