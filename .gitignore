@@ -13,6 +13,19 @@ dist
 dist-ssr
 *.local
 
+# Local AI tools and design caches
+/.agents/
+/.codex/
+/.impeccable/
+/AGENTS.md
+
+# Local environment and generated files
+.env
+.env.*
+!.env.example
+*.tsbuildinfo
+/coverage/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
